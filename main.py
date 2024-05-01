@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.exceptions import HTTPException
 import sqlite3
-from schemas import Customer
+from schemas import Customer, Item
 
 class Response:
     def __init__(self, message, data, code):
@@ -74,4 +74,47 @@ async def delete_customer(id: int, cur: sqlite3.Cursor = Depends(get_db_cursor))
     
     cur.execute("DELETE FROM customers WHERE id = ?;", (id,))
     return Response("Customer deleted", None, 200)
+
+@app.get("/items/{id}", tags=["Items"])
+async def get_item(id: int, cur: sqlite3.Cursor = Depends(get_db_cursor)):
+    cur.execute("SELECT * FROM items WHERE id = ?;", (id,))
+    data = cur.fetchone()
+
+    if data is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    return Response("Item found", Item(id=data[0], name=data[1], price=data[2]), 200)
+
+@app.post("/items", tags=["Items"])
+async def create_item(item: Item, cur: sqlite3.Cursor = Depends(get_db_cursor)):
+    cur.execute("SELECT * FROM items WHERE name = ?;", (item.name,))
+    data = cur.fetchone()
+
+    if data is not None:
+        raise HTTPException(status_code=409, detail="Item already exists")
+    
+    cur.execute("INSERT INTO items (name, price) VALUES (?, ?);", (item.name, item.price))
+    return Response("Item created", Item(id=cur.lastrowid, name=item.name, price=item.price), 201)
+
+@app.put("/items/{id}", tags=["Items"])
+async def update_item(id: int, item: Item, cur: sqlite3.Cursor = Depends(get_db_cursor)):
+    cur.execute("SELECT * FROM items WHERE id = ?;", (id,))
+    data = cur.fetchone()
+
+    if data is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    cur.execute("UPDATE items SET name = ?, price = ? WHERE id = ?;", (item.name, item.price, id))
+    return Response("Item updated", Item(id=id, name=item.name, price=item.price), 200)
+
+@app.delete("/items/{id}", tags=["Items"])
+async def delete_item(id: int, cur: sqlite3.Cursor = Depends(get_db_cursor)):
+    cur.execute("SELECT * FROM items WHERE id = ?;", (id,))
+    data = cur.fetchone()
+
+    if data is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    cur.execute("DELETE FROM items WHERE id = ?;", (id,))
+    return Response("Item deleted", None, 200)
 
