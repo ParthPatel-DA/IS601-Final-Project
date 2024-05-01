@@ -25,10 +25,12 @@ You will need to create the following endpoints:
 
 ```shell
 # Windows
+pip install -r requirements.txt
 py db_init.py
 uvicorn main:app --reload
 
 # Mac
+pip3 install -r requirements.txt
 python3 db_init.py
 uvicorn main:app --reload
 ```
